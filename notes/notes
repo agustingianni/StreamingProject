@@ -1,0 +1,100 @@
+Primera entrega del trabajo
+Esta entrega deberá incluir los siguientes elementos:
+
+	• Definición de los objetivos y alcances del trabajo.
+	
+	• Definición lógica de la aplicación a realizar, incluyendo todos los 
+	  módulos que la componen y su interrelación. Se pueden utilizar diagramas 
+	  de flujo, diagramas de estado, pseudocódigo, diagramas de bloque o cualquier 
+	  otra herramienta que se considere oportuno.
+	  
+	• Especificación del protocolo diseñado. En caso de haber diseñado un protocolo 
+	  se debe incluir una especificación completa del mismo, incluyendo sus mensajes, 
+	  máquina de estados y demás aspectos pertinentes a la especificación de un 
+	  protocolo.
+	  
+	Fecha límite: 28 de agosto de 2009 (viernes).
+
+Entrega final del trabajo
+Esta última entrega deberá incluir:
+	• Todos los elementos de la entrega anterior (actualizados).
+	
+	• El código fuente de la aplicación.
+	
+	• Memoria del proyecto. Deberá realizarse la memoria del proyecto en forma de artículo 
+	  de investigación de no más de 20 páginas. Debe incluirse la motivación para el 
+	  desarrollo del trabajo, el estado del arte, las herramientas utilizadas, el proceso 
+	  seguido para el desarrollo, la descripción del desarrollo, los resultados y las 
+	  conclusiones.
+	  
+	• Manual de usuario.
+	
+	• Anexos con información técnica de referencia (si corresponde).
+
+	Fecha límite: 27 de febrero de 2010 (viernes).
+
+/*
+	GET /nombre_del_streaming HTTP/1.1
+	Host: hostname.del.server
+	Connection: close
+	icy-metadata: 1
+	transferMode.dlna.org: Streaming
+	User-Agent: GStreamer souphttpsrc libsoup/2.26.0
+
+	ICY 200 OK
+	icy-notice1: <BR>This stream requires <a href="http://www.winamp.com/">Winamp</a><BR>
+	icy-notice2: Firehose Ultravox/SHOUTcast Relay Server/Linux v2.6.0<BR>
+	icy-name: friskyRadio | feelin' frisky? [Best Dance, House, Trance and Techno]
+	icy-genre: progressive electronic
+	icy-url: http://www.friskyRadio.com
+	content-type: audio/mpeg
+	icy-pub: 1
+	icy-metaint: 16384
+	icy-br: 128
+
+
+	icy-metaint: X
+	Cada x bytes que mandamos tenemos que mandar esto
+	<strlen("")>StreamTitle='';StreamUrl='';
+*/
+
+To Thread or not to Thread
+I've chosen an event-driven approach to the problem. ("Event driven" is also known as "non-threaded", 
+"polling I/O", "non-blocking I/O", or "multiplexed I/O".) Many programmers today are 
+familiar only with the threaded model of writing servers, where the server creates a new 
+thread or process for each client. This lets you write code in a stream-of-conciousness 
+way, but has several drawbacks: it can be very hard to debug, and it can have high overhead. 
+John Ousterhout's talk on "Why Threads are a Bad Idea (for most purposes)" explains some of 
+the reasons programmers familiar with threads should also learn about the alternatives to 
+threads:
+
+    The talk compares the threads style of programming to an alternative approach, 
+    events, that use only a single thread of control. Although each approach has 
+    its weaknesses, events result in simpler, more manageable code than threads, 
+    with efficiency that is generally as good as or better than threads. Most of 
+    the applications for which threading is currently recommended (including nearly 
+    all user-interface applications) would be better off with an event-based 
+    implementation. 
+
+In an event-driven server, a single thread handles many clients at the same time. 
+This is done by dividing up the work into small pieces, and explicitly handling a 
+single stream of all the pieces of work from all the clients; each client gets a 
+moment of attention just when it needs it.
+
+I've chosen this approach because it will use much less memory to support tens of 
+thousands of clients than would a thread-per-client approach. I may still introduce 
+threads at some point to allow the program to make use of multiple CPU's, but I will 
+do so sparingly. 
+
+/* SO_KEEPALIVE:
+ * --------------------------------------------------------------------------------
+ * If it is important for our client to detect the crashing of the server host,
+ * even if the client is not actively sending data, then some other technique
+ * (such as the SO_KEEPALIVE socket option or some client/server heartbeat function)
+ * is required.
+ *
+ * shutdown():
+ * --------------------------------------------------------------------------------
+ * we can initiate TCP's normal connection termination sequence regardless of
+ * the reference count.
+ */
