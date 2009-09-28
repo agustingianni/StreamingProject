@@ -147,19 +147,19 @@ parse_arguments(int argc, char **argv)
 			// Set individual streaming file
 			case 'f':
 				config.streaming_file = strdup(optarg);
-				printf("Streaming file %s\n", config.streaming_file);
+				fprintf(stdout, "[*] Archivo a servir: %s\n", config.streaming_file);
 				break;
 			// Run in daemon mode
 			case 'd':
 				config.mode = DAEMON_MODE;
-				printf("Setting daemon mode on!\n");
+				fprintf(stdout, "[*] Corriendo en modo daemon\n");
 				break;
 			case 'p':
 				config.port = (unsigned short) atoi(optarg);
-				fprintf(stdout, "Puerto de escucha : %d\n", config.port);
+				fprintf(stdout, "[*] Escuchando en el puerto %d\n", config.port);
 				break;
 			case '?':
-				fprintf(stderr, "Error, opcion invalida\n");
+				fprintf(stderr, "[!] Opcion invalida\n");
 				return -1;
 			default:
 				break;
@@ -172,8 +172,6 @@ parse_arguments(int argc, char **argv)
 int
 main(int argc, char **argv)
 {
-	int err = 0;
-
 	/*
 	 * TODO LIST:
 	 *

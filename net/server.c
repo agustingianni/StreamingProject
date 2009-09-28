@@ -51,9 +51,7 @@ connection_client_handler(events_t *ev, event_t *event)
 	"icy-br: 128\r\n"
 	"\r\n";
 
-	// TODO CAmbiar el 512 por el tamano del buffer de cliente definido
-	// en no se donde.
-	// Tambien moverlo de aca, no tiene sentido alocarlo en la stack cada ves
+	// TODO a buffer moverlo de aca, no tiene sentido alocarlo en la stack cada ves
 	// que llamamos al event handler
 	char buffer[512];
 
@@ -81,7 +79,9 @@ connection_client_handler(events_t *ev, event_t *event)
 		// que enviar son headers de ICECAST para establecer conexion.
 		if(client->state == CLIENT_WAITING)
 		{
+			#ifdef DEBUG
 			printf("[cliente=%d] connection_client_handler(EVENT_READ):CLIENT_WAITING\n", event->fd);
+			#endif
 
 			if(socket_read_string(event->fd, buffer, sizeof(buffer)) == -1)
 			{
@@ -92,7 +92,9 @@ connection_client_handler(events_t *ev, event_t *event)
 			// Por ahora la verificacion es simple
 			if(strcasestr(buffer, "icy-metadata: 1") == NULL)
 			{
+				#ifdef DEBUG
 				fprintf(stderr, "[cliente=%d] Headers invalidos, desconectando\n", event->fd);
+				#endif
 
 				event_del(ev, event->fd);
 				socket_close(event->fd);
@@ -105,8 +107,6 @@ connection_client_handler(events_t *ev, event_t *event)
 			// Si esta todo bien seteamos como empezando la conexion
 			client->state = CLIENT_STARTING;
 
-			//fprintf(stderr, "Cliente paso de estado CLIENT_WAITING a estado CLIENT_STARTING\n");
-
 			return 0;
 		}
 		else
@@ -114,7 +114,9 @@ connection_client_handler(events_t *ev, event_t *event)
 			// Manejar desconecciones
 			if(socket_read_string(event->fd, buffer, sizeof(buffer)) == 0)
 			{
+				#ifdef DEBUG
 				fprintf(stderr, "[cliente=%d] Desconectando cliente\n", event->fd);
+				#endif
 
 				event_del(ev, event->fd);
 				socket_close(event->fd);
@@ -127,10 +129,6 @@ connection_client_handler(events_t *ev, event_t *event)
 			#ifdef DEBUG
 			fprintf(stderr, "[cliente=%d] Invalid read\n%s\n", event->fd, buffer);
 			#endif
-
-			// Enrealidad aca podria ser que el cliente nos esta mandando
-			// mas datos, pero seria invalido de acuerdo a la especificacion
-			// tenemos qe manejar esos casos.
 		}
 	}
 	else if(event->event_mask & EVENT_WRITE)
@@ -141,8 +139,10 @@ connection_client_handler(events_t *ev, event_t *event)
 		switch(client->state)
 		{
 			case CLIENT_STARTING:
+				#ifdef DEBUG
 				printf("[cliente=%d] connection_client_handler(EVENT_WRITE):CLIENT_STARTING\n",
 						event->fd);
+				#endif
 
 				if(socket_write_all(event->fd, data, strlen(data)) == -1)
 				{
@@ -154,7 +154,6 @@ connection_client_handler(events_t *ev, event_t *event)
 				break;
 			case CLIENT_ACTIVE:
 				// Servir con contenido al cliente.
-
 				#ifdef DEBUG
 				fprintf(stderr, "[cliente=%d] connection_client_handler(EVENT_WRITE):CLIENT_ACTIVE\n",
 						event->fd);
@@ -223,8 +222,11 @@ connection_client_handler(events_t *ev, event_t *event)
 				// Por ahora reiniciamos el streaming.
 				if(client->offset == server.stream->size)
 				{
+					#ifdef DEBUG
 					fprintf(stderr, "[cliente=%d] connection_client_handler(CLIENT_ACTIVE):EVENT_WRITE: Se llego al final del stream, reiniciando.\n"
 							, event->fd);
+					#endif
+
 					client->offset = 0;
 				}
 
@@ -282,7 +284,9 @@ connection_accept_handler(events_t *ev, event_t *event)
 
 	server.clients++;
 
+	#ifdef DEBUG
 	printf("connection_accept_handler(): Aceptada nueva conexion: %d\n", client_fd);
+	#endif
 
 	return 0;
 }
@@ -347,7 +351,11 @@ server_enter_event_loop(void)
 	    	elapsed_time += (t2.tv_sec - t1.tv_sec) ? ((t2.tv_usec + 1000000) - t1.tv_usec) : (t2.tv_usec- t1.tv_usec);
 			#endif
 	    }
+
+	    fprintf(stdout, "\r[*] Numero de clientes = %d", server.clients);
 	}
+
+	printf("\n");
 
 	#ifdef BENCHMARK
 	printf("Tiempo promedio de servicio por evento %f\n", 1.0*elapsed_time/events_served);
@@ -362,9 +370,7 @@ int
 server_leave_event_loop(void)
 {
 	// Hace que salgamos del loop de eventos
-	printf("PRE  status = %d\n", server.status);
 	server.status = SERVER_STOPPED;
-	printf("POST status = %d\n", server.status);
 
 	return 0;
 }
